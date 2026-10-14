@@ -18,7 +18,7 @@ const archivo = Archivo({
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = createTranslator(await getRequestLocale());
   return {
-    metadataBase: new URL(config.siteUrl),
+    ...(config.siteUrl ? { metadataBase: new URL(config.siteUrl) } : {}),
     title: {
       default: t('common.metaTitle'),
       template: '%s — ONYX',

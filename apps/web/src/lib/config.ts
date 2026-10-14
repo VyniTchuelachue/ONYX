@@ -10,7 +10,8 @@ export const config = {
   supabaseUrl,
   supabaseKey,
   mode: (!forceDemo && supabaseUrl && supabaseKey ? 'supabase' : 'demo') as 'supabase' | 'demo',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  /** Public address for link previews. Unset on Vercel, Next.js uses the deployment's own address. */
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || null,
   /** Web Push public key (VAPID). Alerts stay off until it is set. */
   pushPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '',
   map: {
