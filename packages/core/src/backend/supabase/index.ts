@@ -196,6 +196,17 @@ export function createSupabaseBackend(sb: SupabaseClient, opts: SupabaseBackendO
         if (!session) throw new BackendError('not_found', 'Profile missing');
         return session;
       },
+      async signInWithProvider(provider, options) {
+        const { error } = await sb.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: authLink('/auth/sign-in', options?.redirectPath),
+            // Shared phones are common: always let people pick the right Google account.
+            queryParams: { prompt: 'select_account' },
+          },
+        });
+        if (error) throw authError(error);
+      },
       async signUp(input, options) {
         const d = validate(signUpSchema, input);
         const { data, error } = await sb.auth.signUp({
@@ -222,6 +233,23 @@ export function createSupabaseBackend(sb: SupabaseClient, opts: SupabaseBackendO
         await requireUserId();
         const { error } = await sb.auth.updateUser({ password: d.password });
         if (error) throw authError(error);
+      },
+      async deleteAccount() {
+        const uid = await requireUserId();
+        // Check first: the verification documents can't come back once removed.
+        await run(sb.rpc('delete_my_account', { p_dry_run: true }));
+        // SQL can't remove Storage files, so empty the person's folder through the API.
+        const folder = sb.storage.from(DOCUMENT_BUCKET);
+        const { data: files, error: listError } = await folder.list(uid, { limit: 100 });
+        if (listError) throw toBackendError(listError);
+        if (files?.length) {
+          const { error } = await folder.remove(files.map((f) => `${uid}/${f.name}`));
+          if (error) throw toBackendError(error);
+        }
+        await run(sb.rpc('delete_my_account'));
+        myTechId = null;
+        // The account no longer exists on the server: only this device's session is left to clear.
+        await sb.auth.signOut({ scope: 'local' });
       },
       async signOut() {
         myTechId = null;

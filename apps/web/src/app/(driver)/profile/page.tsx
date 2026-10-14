@@ -18,6 +18,7 @@ import { forgetThisDevice } from '@/lib/alerts';
 import { PageContainer, PageHeader, PageSkeleton } from '@/components/page';
 import { LanguageToggle } from '@/components/shell/common';
 import { AlertsCard } from '@/components/alerts/alerts-card';
+import { DeleteAccount } from '@/components/account/delete-account';
 import { Field, Input } from '@/components/ui/field';
 import { Segmented } from '@/components/ui/choice';
 import { Button, ButtonLink } from '@/components/ui/button';
@@ -67,6 +68,13 @@ export default function ProfilePage() {
 
       {isDemo && <DemoSection />}
       {session && <SignOut />}
+
+      <footer className="mt-10 flex flex-col items-start gap-1 border-t border-line pt-6">
+        <Link href="/privacy" className="px-1 py-2 text-[14px] text-ink-2 underline-offset-4 hover:text-ink hover:underline">
+          {t('account.privacy')}
+        </Link>
+        {session && <DeleteAccount className="-ml-3" />}
+      </footer>
     </PageContainer>
   );
 }

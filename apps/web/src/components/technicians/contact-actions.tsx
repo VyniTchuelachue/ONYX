@@ -44,26 +44,31 @@ export function ContactActions({
   const { t } = useI18n();
   const guard = useDemoGuard();
   const message = useWhatsappText(technician);
-  const whatsapp = technician.whatsapp ?? technician.phone;
+  const phone = technician.phone;
+  const whatsapp = technician.whatsapp ?? phone;
 
   return (
     <div className={cn('flex flex-wrap gap-2', className)}>
-      <a href={telHref(technician.phone)} onClick={guard} className={buttonClass('primary', size)}>
-        <Phone className="size-4" aria-hidden="true" />
-        {t('technicians.call')}
-      </a>
-      <a
-        href={whatsappHref(whatsapp, message)}
-        onClick={guard}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={buttonClass('secondary', size)}
-      >
-        <MessageCircle className="size-4 text-ok" aria-hidden="true" />
-        {t('technicians.whatsapp')}
-      </a>
-      {showSms && (
-        <a href={smsHref(technician.phone, message)} onClick={guard} className={buttonClass('secondary', size)}>
+      {phone && (
+        <a href={telHref(phone)} onClick={guard} className={buttonClass('primary', size)}>
+          <Phone className="size-4" aria-hidden="true" />
+          {t('technicians.call')}
+        </a>
+      )}
+      {whatsapp && (
+        <a
+          href={whatsappHref(whatsapp, message)}
+          onClick={guard}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonClass('secondary', size)}
+        >
+          <MessageCircle className="size-4 text-ok" aria-hidden="true" />
+          {t('technicians.whatsapp')}
+        </a>
+      )}
+      {showSms && phone && (
+        <a href={smsHref(phone, message)} onClick={guard} className={buttonClass('secondary', size)}>
           <MessageSquareText className="size-4 text-blue-soft" aria-hidden="true" />
           {t('technicians.sms')}
         </a>

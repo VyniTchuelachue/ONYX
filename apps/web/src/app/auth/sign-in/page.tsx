@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import type { UserRole } from '@onyx/core';
 import { useI18n } from '@/lib/i18n';
 import { useBackend } from '@/lib/backend';
@@ -13,6 +14,7 @@ import { isDemo } from '@/lib/config';
 import { Field, Input, PasswordInput } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { DemoRolePicker } from '@/components/demo-role-picker';
+import { GoogleButton, OrWithEmail } from '@/components/auth/google-button';
 
 export default function SignInPage() {
   return (
@@ -42,6 +44,14 @@ function SignIn() {
     if (signedInRole) router.replace(next ?? homeFor(signedInRole));
   }, [signedInRole, next, router]);
 
+  // Back from Google without an account (cancelled, or refused): say so once.
+  const providerErrorShown = useRef(false);
+  useEffect(() => {
+    if (providerErrorShown.current || !/(^|[#&?])error=/.test(window.location.hash + window.location.search)) return;
+    providerErrorShown.current = true;
+    toast.error(t('auth.googleFailed'));
+  }, [t]);
+
   const submit = async () => {
     if (!backend) return;
     setBusy(true);
@@ -58,6 +68,8 @@ function SignIn() {
   return (
     <>
       <h1 className="font-display text-[30px] leading-tight text-ink">{t('auth.signInTitle')}</h1>
+      <GoogleButton className="mt-6" redirectPath={next ?? undefined} />
+      <OrWithEmail />
       <form
         className="mt-6 space-y-4"
         onSubmit={(e) => {

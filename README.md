@@ -41,17 +41,30 @@ copy `apps/web/.env.example` to `apps/web/.env.local` and fill it in.
 3. Make yourself an admin:
    `update public.profiles set role = 'admin' where email = 'you@example.com';`
 4. Sign-up confirmations and password resets are emailed by Supabase Auth:
-   - Authentication → URL Configuration: set the Site URL to your domain and add
-     `https://your-domain/**` to the Redirect URLs (the links come back to
-     `/auth/sign-in` and `/auth/reset-password`).
+   - Authentication → URL Configuration: set the Site URL to your production address (on
+     Vercel, the one under Settings → Domains, e.g. `https://onyx-xxxx.vercel.app`) and add
+     `https://your-domain/**` to the Redirect URLs. Never use a deployment-specific
+     `*.vercel.app` address: Vercel asks visitors to log in to Vercel there. The app sends
+     links to `NEXT_PUBLIC_SITE_URL`, or on Vercel to the production domain automatically.
    - Authentication → SMTP: connect your own sender (Resend, Brevo…). Supabase's built-in
      sender is for testing only: a few emails per hour, and only to your team's addresses.
+   - Optional: Authentication → Sign In / Providers → Email → turn off "Confirm email" so
+     people start right after signing up (the address is then not checked).
+5. Continue with Google:
+   - Google Cloud Console → APIs & Services → OAuth consent screen: app name ONYX, support
+     email, then publish the app.
+   - Credentials → Create credentials → OAuth client ID → Web application. Under
+     Authorized redirect URIs, paste the Callback URL shown in Supabase → Authentication →
+     Sign In / Providers → Google (`https://<project>.supabase.co/auth/v1/callback`).
+   - Back in Supabase, enable Google and paste the Client ID and Client Secret.
+   - Google's account chooser says "continue to <project>.supabase.co" unless you add a
+     custom domain to Supabase (paid add-on).
 
 ### Checks
 
 ```bash
-npm test           # core unit tests (52): rules, triage, i18n parity, alerts, demo job flow
-npm run db:test    # 73 checks: migrations + RLS + job lifecycle + alert targeting in embedded Postgres
+npm test           # core unit tests (56): rules, triage, i18n parity, alerts, accounts, demo job flow
+npm run db:test    # 88 checks: migrations + RLS + job lifecycle + alerts + account deletion in embedded Postgres
 npm run typecheck
 ```
 
@@ -97,7 +110,7 @@ stays open in the background.
 | Driver | `/` home, `/assistant` (text or voice), `/technicians` list + map, `/technicians/[id]`, `/request/new` wizard, `/requests` + `/requests/[id]` live tracking, quotes, payment and review, `/offline`, `/profile` |
 | Technician | `/pro` dashboard + inbox, `/pro/jobs` + `/pro/jobs/[id]` (status, diagnosis, quote, completion), `/pro/onboarding`, `/pro/profile` (listing + verification documents) |
 | Admin | `/admin` overview, `/admin/technicians` verification, `/admin/requests`, `/admin/payments` (commissions), `/admin/quality` (ratings, performance) |
-| Account | `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, `/auth/reset-password`, `/demo` role picker |
+| Account | `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, `/auth/reset-password`, `/account/delete`, `/privacy`, `/demo` role picker |
 
 The service worker (`public/sw.js`) only registers in production builds (`npm run build`
 then `npm start`).
@@ -115,5 +128,10 @@ then `npm start`).
 - A keyed map tile provider (see `.env.example`): OpenStreetMap's own tiles are for light use.
 - `ANTHROPIC_API_KEY`, with the model chosen for your budget (see AI assistant).
 - Phone alerts keys and database secrets (see Phone alerts).
+- App stores: set `NEXT_PUBLIC_SUPPORT_EMAIL`, then give Google Play and Apple
+  `https://your-domain/privacy` (privacy policy) and `https://your-domain/account/delete`
+  (account deletion). Add your company's legal name to the privacy policy once registered
+  (`apps/web/src/components/legal/privacy-policy.tsx`), and have it reviewed. If you change
+  map provider or add a service, update that page too.
 - Not built yet: SMS alerts, mobile-money payment (payments are recorded, not processed),
   the React Native app (it can reuse `packages/core` and the same backend).

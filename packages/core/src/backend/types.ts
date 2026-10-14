@@ -70,12 +70,22 @@ export interface AuthPort {
   getSession(): Promise<Session | null>;
   onChange(listener: (session: Session | null) => void): () => void;
   signIn(input: SignInInput): Promise<Session>;
+  /**
+   * Continue with Google: leaves the page for Google, and the session starts when the person
+   * comes back to `/auth/sign-in` (then `redirectPath`, if given). Creates the account the first time.
+   */
+  signInWithProvider(provider: 'google', options?: { redirectPath?: string }): Promise<void>;
   /** `redirectPath`: where the confirmation link should land, e.g. `/pro/onboarding`. */
   signUp(input: SignUpInput, options?: { redirectPath?: string }): Promise<{ session: Session | null; needsEmailConfirmation: boolean }>;
   /** Emails a link to choose a new password. Resolves the same way whether or not the address has an account. */
   requestPasswordReset(email: string): Promise<void>;
   /** Sets a new password for the signed-in user (after following the reset link). */
   updatePassword(password: string): Promise<void>;
+  /**
+   * Deletes the signed-in person's account and personal data, then signs out. Completed jobs
+   * and their payments stay, anonymised. Fails with `conflict` while a job is still open.
+   */
+  deleteAccount(): Promise<void>;
   signOut(): Promise<void>;
   updateProfile(patch: ProfilePatch): Promise<Profile>;
   /** Bearer token for calling ONYX HTTP APIs (e.g. the assistant). */

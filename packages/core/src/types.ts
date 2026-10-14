@@ -51,7 +51,8 @@ export interface Technician {
   businessName: string;
   ownerName: string;
   bio: string | null;
-  phone: string;
+  /** Null only on the listing of a technician who deleted their account. */
+  phone: string | null;
   whatsapp: string | null;
   specialties: Specialty[];
   vehicleTypes: VehicleType[];
@@ -102,9 +103,10 @@ export interface TechnicianDocument {
 export interface ServiceRequest {
   id: string;
   code: string;
-  driverId: string;
+  /** Null once the driver has deleted their account (the completed job stays, anonymised). */
+  driverId: string | null;
   contactName: string;
-  contactPhone: string;
+  contactPhone: string | null;
   requestedTechnicianId: string | null;
   technicianId: string | null;
   status: RequestStatus;

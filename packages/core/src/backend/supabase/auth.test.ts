@@ -82,6 +82,72 @@ describe('supabase adapter: accounts', () => {
     await rejectsWith(createSupabaseBackend(client).auth.signIn({ email: 'awa@example.com', password: 'whatever' }), 'email_not_confirmed');
   });
 
+  it('deletes an account in a safe order: check, documents, account, then this device', async () => {
+    const calls: string[] = [];
+    const client = {
+      auth: {
+        getSession: async () => ({ data: { session: { user: { id: 'user-1' } } } }),
+        signOut: async (options?: { scope?: string }) => {
+          calls.push(`signOut:${options?.scope}`);
+          return { error: null };
+        },
+      },
+      rpc: async (name: string, args?: { p_dry_run?: boolean }) => {
+        calls.push(`${name}:${args?.p_dry_run ? 'check' : 'delete'}`);
+        return { data: null, error: null };
+      },
+      storage: {
+        from: () => ({
+          list: async (folder: string) => {
+            calls.push(`list:${folder}`);
+            return { data: [{ name: 'id_card-1.jpg' }], error: null };
+          },
+          remove: async (paths: string[]) => {
+            calls.push(`remove:${paths.join(',')}`);
+            return { data: [], error: null };
+          },
+        }),
+      },
+    } as unknown as SupabaseClient;
+    await createSupabaseBackend(client).auth.deleteAccount();
+    assert.deepEqual(calls, ['delete_my_account:check', 'list:user-1', 'remove:user-1/id_card-1.jpg', 'delete_my_account:delete', 'signOut:local']);
+  });
+
+  it('removes nothing while a job is still open', async () => {
+    const calls: string[] = [];
+    const client = {
+      auth: { getSession: async () => ({ data: { session: { user: { id: 'user-1' } } } }) },
+      rpc: async () => ({ data: null, error: { message: 'ONYX:conflict' } }),
+      storage: {
+        from: () => ({
+          list: async () => {
+            calls.push('list');
+            return { data: [], error: null };
+          },
+        }),
+      },
+    } as unknown as SupabaseClient;
+    await rejectsWith(createSupabaseBackend(client).auth.deleteAccount(), 'conflict');
+    assert.deepEqual(calls, []);
+  });
+
+  it('sends Google sign-ins back to the public address, letting people pick their account', async () => {
+    let sent: unknown;
+    const client = {
+      auth: {
+        signInWithOAuth: async (args: unknown) => {
+          sent = args;
+          return { data: { provider: 'google', url: 'https://accounts.google.com/…' }, error: null };
+        },
+      },
+    } as unknown as SupabaseClient;
+    await createSupabaseBackend(client, { siteUrl: 'https://onyx.test' }).auth.signInWithProvider('google', { redirectPath: '/pro/onboarding' });
+    assert.deepEqual(sent, {
+      provider: 'google',
+      options: { redirectTo: 'https://onyx.test/auth/sign-in?next=%2Fpro%2Fonboarding', queryParams: { prompt: 'select_account' } },
+    });
+  });
+
   it('still recognises wrong passwords from older Auth servers', async () => {
     const { client } = fakeSupabase({ signIn: { status: 400, message: 'Invalid login credentials' } });
     await rejectsWith(createSupabaseBackend(client).auth.signIn({ email: 'awa@example.com', password: 'whatever' }), 'invalid_credentials');

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { createTranslator, STORAGE_KEYS, type Locale, type Translator } from '@onyx/core';
 import { LOCALE_COOKIE } from './config';
 import { safeStorage } from './storage';
@@ -13,15 +14,16 @@ const I18nContext = createContext<I18nValue | null>(null);
 
 export function I18nProvider({ initialLocale, children }: { initialLocale: Locale; children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const router = useRouter();
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
     document.documentElement.lang = next;
-    // Pages share the root title; later navigations get it from the server in the new language.
-    document.title = createTranslator(next).t('common.metaTitle');
     void safeStorage.setItem(STORAGE_KEYS.locale, next);
-  }, []);
+    // Page titles and other server-rendered text come back in the new language.
+    router.refresh();
+  }, [router]);
 
   const value = useMemo<I18nValue>(() => ({ ...createTranslator(locale), setLocale }), [locale, setLocale]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

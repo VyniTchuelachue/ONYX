@@ -100,7 +100,7 @@ export default function AdminTechnicianPage() {
           <Facts
             items={[
               { label: t('admin.owner'), value: x.ownerName },
-              { label: t('onboarding.phone'), value: <span className="tabular">{formatPhone(x.phone)}</span> },
+              ...(x.phone ? [{ label: t('onboarding.phone'), value: <span className="tabular">{formatPhone(x.phone)}</span> }] : []),
               ...(x.whatsapp ? [{ label: t('onboarding.whatsapp'), value: <span className="tabular">{formatPhone(x.whatsapp)}</span> }] : []),
               { label: t('onboarding.area'), value: `${x.area}, ${x.city}` },
               ...(x.address ? [{ label: t('onboarding.address'), value: x.address }] : []),

@@ -109,8 +109,8 @@ function JobView({ detail }: { detail: RequestDetail }) {
       <section className="rounded-xl border border-line bg-surface-1 p-4">
         <p className="text-[13px] text-ink-3">{t('pro.driver')}</p>
         <p className="mt-0.5 text-[17px] font-semibold text-ink">{r.contactName}</p>
-        <p className="tabular text-[14px] text-ink-2">{fmt.phone(r.contactPhone)}</p>
-        {active && (
+        {r.contactPhone && <p className="tabular text-[14px] text-ink-2">{fmt.phone(r.contactPhone)}</p>}
+        {active && r.contactPhone && (
           <div className="mt-4 grid grid-cols-3 gap-2">
             <a href={telHref(r.contactPhone)} onClick={(e) => guard(e, blocked)} className={buttonClass('primary', 'md')}>
               <Phone className="size-4" aria-hidden="true" />

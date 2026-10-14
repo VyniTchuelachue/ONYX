@@ -23,7 +23,7 @@ export function getBackend(): Promise<OnyxBackend> {
             const client = createClient(config.supabaseUrl, config.supabaseKey, {
               auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
             });
-            return createSupabaseBackend(client, { siteUrl: window.location.origin });
+            return createSupabaseBackend(client, { siteUrl: config.authSiteUrl ?? window.location.origin });
           })()
         : (async () => {
             const { createDemoBackend } = await import('@onyx/core/demo');

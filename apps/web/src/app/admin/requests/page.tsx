@@ -127,7 +127,7 @@ function RequestSheet({ id, onClose }: { id: string | null; onClose: () => void 
             </div>
             <Facts
               items={[
-                { label: t('admin.columns.driver'), value: `${r.contactName}, ${fmt.phone(r.contactPhone)}` },
+                { label: t('admin.columns.driver'), value: r.contactPhone ? `${r.contactName}, ${fmt.phone(r.contactPhone)}` : r.contactName },
                 { label: t('admin.columns.technician'), value: d.technician?.businessName ?? t('admin.unassigned') },
                 { label: t('request.place'), value: r.placeLabel ?? '—' },
                 { label: t('request.landmark'), value: r.landmark },

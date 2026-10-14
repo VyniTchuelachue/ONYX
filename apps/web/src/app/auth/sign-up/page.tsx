@@ -11,6 +11,7 @@ import { safeNext } from '@/lib/redirects';
 import { Field, Input, PasswordInput } from '@/components/ui/field';
 import { Button, ButtonLink } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { GoogleButton, OrWithEmail } from '@/components/auth/google-button';
 
 export default function SignUpPage() {
   return (
@@ -113,6 +114,9 @@ function SignUp() {
         </div>
       </fieldset>
 
+      <GoogleButton className="mt-6" redirectPath={intent === 'technician' ? '/pro/onboarding' : (next ?? undefined)} />
+      <OrWithEmail />
+
       <form
         className="mt-6 space-y-4"
         onSubmit={(e) => {
@@ -141,6 +145,13 @@ function SignUp() {
           {busy ? t('auth.signingUp') : t('auth.signUp')}
         </Button>
       </form>
+      <p className="mt-4 text-center text-[13px] leading-relaxed text-ink-3">
+        {t('account.signUpNotice')}{' '}
+        <Link href="/privacy" className="text-ink-2 underline underline-offset-4 hover:text-ink">
+          {t('account.privacyLink')}
+        </Link>
+        .
+      </p>
       <p className="mt-5 text-center text-[15px] text-ink-3">
         {t('auth.haveAccount')}{' '}
         <Link href={`/auth/sign-in${next ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-medium text-gold-bright hover:underline">

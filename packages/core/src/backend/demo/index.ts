@@ -310,6 +310,10 @@ export async function createDemoBackend(opts: DemoBackendOptions): Promise<OnyxB
         store.mutate((d) => (d.sessionUserId = p.id));
         return sessionFor(p);
       },
+      async signInWithProvider() {
+        // No Google in the demo: the screens only offer it with Supabase.
+        throw new BackendError('forbidden', 'Not available in demo mode');
+      },
       async signUp(input) {
         const data = validate(signUpSchema, input);
         await delay();
@@ -339,6 +343,64 @@ export async function createDemoBackend(opts: DemoBackendOptions): Promise<OnyxB
         validate(newPasswordSchema, { password });
         requireMe();
         await delay();
+      },
+      // Same rules as delete_my_account() in SQL. The three demo accounts stay, so the demo keeps working.
+      async deleteAccount() {
+        const me = requireMe();
+        await delay();
+        if (me.role === 'admin' || (Object.values(DEMO_USER_IDS) as string[]).includes(me.id)) throw new BackendError('forbidden', 'Demo accounts stay');
+        const tech = db().technicians.find((t) => t.userId === me.id) ?? null;
+        if (db().requests.some((r) => isActive(r.status) && (r.driverId === me.id || (tech !== null && r.technicianId === tech.id)))) {
+          throw new BackendError('conflict', 'A job is still open');
+        }
+        const blur = (n: number) => Math.round(n * 100) / 100;
+        store.mutate((d) => {
+          const gone = new Set(d.requests.filter((r) => r.driverId === me.id && r.status !== 'completed').map((r) => r.id));
+          d.requests = d.requests.filter((r) => !gone.has(r.id));
+          d.events = d.events.filter((e) => !gone.has(e.requestId));
+          d.quotes = d.quotes.filter((q) => !gone.has(q.requestId));
+          d.declines = d.declines.filter((x) => !gone.has(x.requestId));
+          const kept = new Set<string>();
+          for (const r of d.requests) {
+            if (r.driverId !== me.id) continue;
+            kept.add(r.id);
+            Object.assign(r, {
+              driverId: null,
+              contactName: 'Compte supprimé',
+              contactPhone: null,
+              description: '',
+              aiSummary: null,
+              vehicle: { type: r.vehicle.type },
+              landmark: 'Compte supprimé',
+              location: { lat: blur(r.location.lat), lng: blur(r.location.lng) },
+              cancelReason: null,
+            });
+          }
+          for (const review of d.reviews) {
+            if (kept.has(review.requestId)) Object.assign(review, { reviewerName: '', comment: null });
+          }
+          if (tech) {
+            d.documents = d.documents.filter((doc) => doc.technicianId !== tech.id);
+            Object.assign(tech, {
+              userId: null,
+              businessName: 'Compte supprimé',
+              ownerName: 'Compte supprimé',
+              bio: null,
+              phone: null,
+              whatsapp: null,
+              address: null,
+              photoUrl: null,
+              openingHours: null,
+              yearsExperience: null,
+              location: { lat: blur(tech.location.lat), lng: blur(tech.location.lng) },
+              verificationStatus: 'suspended',
+              verificationNote: 'Compte supprimé par son titulaire.',
+              availability: 'offline',
+            });
+          }
+          d.profiles = d.profiles.filter((p) => p.id !== me.id);
+          d.sessionUserId = null;
+        });
       },
       async signOut() {
         store.mutate((d) => (d.sessionUserId = null));

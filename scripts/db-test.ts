@@ -340,6 +340,53 @@ async function main() {
   const left = await asService(`select endpoint from public.push_subscriptions`);
   ok(left.length === 1 && left[0]!.endpoint === device(2)[0], 'signing out forgets the device, and nobody can remove another person’s');
 
+  console.log('\nContinue with Google');
+  const googleUser = crypto.randomUUID();
+  await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)`, [
+    googleUser,
+    'awa.ngo@gmail.com',
+    JSON.stringify({ name: 'Awa Ngo', locale: 'en-GB', avatar_url: 'https://lh3.googleusercontent.com/a/x', email_verified: true }),
+  ]);
+  const googleProfile = (await as(googleUser, `select full_name, locale, role, phone from public.profiles`))[0]!;
+  ok(googleProfile.full_name === 'Awa Ngo' && googleProfile.locale === 'en' && googleProfile.role === 'driver' && googleProfile.phone === null, 'a Google account gets a profile with its name and language');
+
+  console.log('\nAccount deletion');
+  await expectError(null, `select public.delete_my_account()`, [], /permission denied/, 'visitors cannot call it');
+  await expectError(adminUser, `select public.delete_my_account()`, [], /ONYX:forbidden/, 'ONYX team accounts are not deleted from the app');
+  await expectError(driverB, `select public.delete_my_account(true)`, [], /ONYX:conflict/, 'an open request has to end first');
+
+  const ratingBefore = (await as(null, `select rating_count, rating_avg from public.technicians where id = $1`, [TECH1]))[0]!;
+  await as(driverA, `select public.delete_my_account(true)`);
+  ok((await db.query<Row>(`select count(*)::int as n from auth.users where id = $1`, [driverA])).rows[0]!.n === 1, 'a dry run deletes nothing');
+  await as(driverA, `select public.save_push_subscription($1, $2, $3)`, device(5));
+  await as(driverA, `select public.delete_my_account()`);
+  ok((await db.query<Row>(`select count(*)::int as n from auth.users where id = $1`, [driverA])).rows[0]!.n === 0, 'the driver’s sign-in account is gone');
+  ok((await asService(`select count(*)::int as n from public.profiles where id = $1`, [driverA]))[0]!.n === 0, 'and their profile');
+  ok((await asService(`select count(*)::int as n from public.push_subscriptions where endpoint = $1`, [device(5)[0]]))[0]!.n === 0, 'and the phones saved for alerts');
+  const kept = (await asService(`select * from public.service_requests where id = $1`, [req!.id]))[0]!;
+  ok(
+    kept && kept.driver_id === null && kept.contact_phone === null && kept.contact_name === 'Compte supprimé' && JSON.stringify(kept.vehicle) === '{"type":"car"}',
+    'a completed job stays, without the driver’s name, phone or vehicle',
+  );
+  ok(Number(kept.lat) === Math.round(Number(kept.lat) * 100) / 100, 'its position is blurred to about a kilometre');
+  const payment = (await asService(`select amount, driver_id from public.payments where request_id = $1`, [req!.id]))[0]!;
+  ok(payment.amount === 52000 && payment.driver_id === null, 'its payment stays for the commission accounting');
+  const review = (await asService(`select rating, reviewer_name, comment from public.reviews where request_id = $1`, [req!.id]))[0]!;
+  ok(review.rating === 4 && review.reviewer_name === '' && review.comment === null, 'the review keeps its rating but loses the name and words');
+  const ratingAfter = (await as(null, `select rating_count, rating_avg from public.technicians where id = $1`, [TECH1]))[0]!;
+  ok(ratingAfter.rating_count === ratingBefore.rating_count && Number(ratingAfter.rating_avg) === Number(ratingBefore.rating_avg), 'the technician’s rating is unchanged');
+  const history = await as(techUser, `select contact_phone from public.service_requests where id = $1`, [req!.id]);
+  ok(history.length === 1 && history[0]!.contact_phone === null, 'the technician still sees the job in their history');
+
+  const listingId = (await asService(`select id from public.technicians where user_id = $1`, [newTechUser]))[0]!.id;
+  await as(newTechUser, `select public.delete_my_account()`);
+  const listing = (await asService(`select * from public.technicians where id = $1`, [listingId]))[0]!;
+  ok(
+    listing.user_id === null && listing.phone === null && listing.owner_name === 'Compte supprimé' && listing.verification_status === 'suspended',
+    'a technician’s listing loses its owner, phone and name and leaves the directory',
+  );
+  ok((await as(null, `select count(*)::int as n from public.technicians where id = $1`, [listingId]))[0]!.n === 0, 'nobody can find it any more');
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 }

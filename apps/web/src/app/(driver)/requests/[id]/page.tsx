@@ -103,6 +103,7 @@ function TrackingView({ detail }: { detail: RequestDetail }) {
 
   const pendingQuote = quotes.find((q) => q.status === 'pending');
   const otherQuotes = quotes.filter((q) => q !== pendingQuote);
+  const requestedContact = requestedTechnician?.whatsapp ?? requestedTechnician?.phone ?? null;
   const minutesWaiting = (now - new Date(r.createdAt).getTime()) / 60000;
   const showMap = r.status === 'en_route' || (r.status === 'accepted' && !!technician);
 
@@ -132,10 +133,10 @@ function TrackingView({ detail }: { detail: RequestDetail }) {
                 ? t('request.waitingBody', { name: requestedTechnician.businessName })
                 : t('request.searchingBody')}
             </p>
-            {r.requestedTechnicianId && requestedTechnician && (
+            {r.requestedTechnicianId && requestedContact && (
               <a
                 href={whatsappHref(
-                  requestedTechnician.whatsapp ?? requestedTechnician.phone,
+                  requestedContact,
                   t('request.whatsappText', { code: r.code, category: t(`categories.${r.category}`), place: r.placeLabel ?? '' }),
                 )}
                 onClick={(e) => {
@@ -178,7 +179,7 @@ function TrackingView({ detail }: { detail: RequestDetail }) {
               {technician.ratingCount > 0 && <Rating value={technician.ratingAvg} count={`(${technician.ratingCount})`} className="mt-0.5" />}
             </div>
           </div>
-          {r.status !== 'completed' && r.status !== 'cancelled' && (
+          {r.status !== 'completed' && r.status !== 'cancelled' && technician.phone && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               <a
                 href={telHref(technician.phone)}

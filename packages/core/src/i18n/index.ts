@@ -51,6 +51,11 @@ function format(template: string, vars: Vars | undefined, locale: Locale): strin
   });
 }
 
+/** The same typographic polish for long-form text kept outside the dictionaries (legal pages). */
+export function polishText(text: string, locale: Locale): string {
+  return typography(text, locale);
+}
+
 export function createTranslator(locale: Locale): Translator {
   const dict = dictionaries[locale];
   const plural = new Intl.PluralRules(locale === 'fr' ? 'fr-FR' : 'en-US');
