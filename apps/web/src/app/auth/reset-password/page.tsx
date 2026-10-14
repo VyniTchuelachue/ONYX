@@ -23,6 +23,8 @@ export default function ResetPasswordPage() {
   const backend = useBackend();
   const session = useSession();
   const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -54,6 +56,11 @@ export default function ResetPasswordPage() {
   const role = session.session.profile.role;
   const submit = async () => {
     if (!backend) return;
+    if (password !== confirmation) {
+      setConfirmError(t('errors.password_mismatch'));
+      return;
+    }
+    setConfirmError(null);
     setBusy(true);
     setError(null);
     setFieldError(null);
@@ -82,6 +89,9 @@ export default function ResetPasswordPage() {
       >
         <Field label={t('auth.newPassword')} hint={t('auth.passwordHelp')} error={fieldError}>
           {(p) => <PasswordInput {...p} autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />}
+        </Field>
+        <Field label={t('auth.confirmPassword')} error={confirmError}>
+          {(p) => <PasswordInput {...p} autoComplete="new-password" required minLength={8} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} />}
         </Field>
         {error && (
           <p role="alert" className="rounded-md border border-danger/30 bg-danger/8 px-3.5 py-2.5 text-[14px] text-danger-soft">

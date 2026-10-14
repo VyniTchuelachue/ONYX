@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { Suspense, useEffect, useState } from 'react';
 import type { UserRole } from '@onyx/core';
 import { useI18n } from '@/lib/i18n';
 import { useBackend } from '@/lib/backend';
@@ -14,6 +13,8 @@ import { isDemo } from '@/lib/config';
 import { Field, Input, PasswordInput } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { DemoRolePicker } from '@/components/demo-role-picker';
+import { ConfirmCode } from '@/components/auth/confirm-code';
+import { isBackendError } from '@onyx/core/backend';
 import { GoogleButton, OrWithEmail } from '@/components/auth/google-button';
 
 export default function SignInPage() {
@@ -34,6 +35,8 @@ function SignIn() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Signed up but never typed the emailed code: finish that step here.
+  const [confirmFor, setConfirmFor] = useState<string | null>(null);
 
   const go = (role: UserRole) => router.replace(next ?? homeFor(role));
 
@@ -44,14 +47,6 @@ function SignIn() {
     if (signedInRole) router.replace(next ?? homeFor(signedInRole));
   }, [signedInRole, next, router]);
 
-  // Back from Google without an account (cancelled, or refused): say so once.
-  const providerErrorShown = useRef(false);
-  useEffect(() => {
-    if (providerErrorShown.current || !/(^|[#&?])error=/.test(window.location.hash + window.location.search)) return;
-    providerErrorShown.current = true;
-    toast.error(t('auth.googleFailed'));
-  }, [t]);
-
   const submit = async () => {
     if (!backend) return;
     setBusy(true);
@@ -60,10 +55,13 @@ function SignIn() {
       const session = await backend.auth.signIn({ email, password });
       go(session.profile.role);
     } catch (e) {
-      setError(errorMessage(t, e));
+      if (isBackendError(e) && e.code === 'email_not_confirmed') setConfirmFor(email.trim());
+      else setError(errorMessage(t, e));
       setBusy(false);
     }
   };
+
+  if (confirmFor) return <ConfirmCode email={confirmFor} onConfirmed={(s) => go(s.profile.role)} />;
 
   return (
     <>

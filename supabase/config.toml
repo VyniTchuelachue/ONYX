@@ -27,5 +27,10 @@ enable_signup = true
 
 [auth.email]
 enable_signup = true
-# Turn confirmations on in production (Dashboard → Authentication → Providers → Email).
-enable_confirmations = false
+# Sign-up ends with a 6-digit code from this email (hosted projects: paste the same template
+# in the dashboard, see README). Set to false to sign people in without confirming.
+enable_confirmations = true
+
+[auth.email.template.confirmation]
+subject = "Votre code ONYX : {{ .Token }}"
+content_path = "./supabase/templates/confirm-signup.html"

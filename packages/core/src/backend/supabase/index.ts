@@ -11,6 +11,7 @@ import {
   quoteInputSchema,
   reviewInputSchema,
   signInSchema,
+  signUpCodeSchema,
   signUpSchema,
   technicianInputSchema,
 } from '../../schemas';
@@ -76,6 +77,8 @@ function authError(error: { code?: string; status?: number; message: string }): 
       return new BackendError('validation', error.message, { password: 'same_password' });
     case 'weak_password':
       return new BackendError('validation', error.message, { password: 'weak_password' });
+    case 'otp_expired':
+      return new BackendError('validation', error.message, { code: 'invalid_code' });
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit':
       return new BackendError('rate_limited', error.message);
@@ -200,7 +203,7 @@ export function createSupabaseBackend(sb: SupabaseClient, opts: SupabaseBackendO
         const { error } = await sb.auth.signInWithOAuth({
           provider,
           options: {
-            redirectTo: authLink('/auth/sign-in', options?.redirectPath),
+            redirectTo: authLink('/auth/callback', options?.redirectPath),
             // Shared phones are common: always let people pick the right Google account.
             queryParams: { prompt: 'select_account' },
           },
@@ -213,7 +216,7 @@ export function createSupabaseBackend(sb: SupabaseClient, opts: SupabaseBackendO
           email: d.email,
           password: d.password,
           options: {
-            emailRedirectTo: authLink('/auth/sign-in', options?.redirectPath),
+            emailRedirectTo: authLink('/auth/callback', options?.redirectPath),
             data: { full_name: d.fullName, phone: d.phone ?? null, locale: d.locale, intent: d.intent },
           },
         });
@@ -222,6 +225,19 @@ export function createSupabaseBackend(sb: SupabaseClient, opts: SupabaseBackendO
         if (data.user && data.user.identities?.length === 0) throw new BackendError('email_taken');
         const session = data.session ? await loadSession(data.user) : null;
         return { session, needsEmailConfirmation: !data.session };
+      },
+      async verifySignUpCode(email, code) {
+        const d = validate(signUpCodeSchema, { email, code });
+        const { data, error } = await sb.auth.verifyOtp({ email: d.email, token: d.code, type: 'email' });
+        if (error) throw authError(error);
+        const session = await loadSession(data.user);
+        if (!session) throw new BackendError('not_found', 'Profile missing');
+        return session;
+      },
+      async resendSignUpCode(email) {
+        const d = validate(passwordResetSchema, { email });
+        const { error } = await sb.auth.resend({ type: 'signup', email: d.email, options: { emailRedirectTo: authLink('/auth/callback') } });
+        if (error) throw authError(error);
       },
       async requestPasswordReset(email) {
         const d = validate(passwordResetSchema, { email });

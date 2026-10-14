@@ -170,6 +170,11 @@ export const pushDeviceSchema = z.object({
 });
 export type PushDevice = z.input<typeof pushDeviceSchema>;
 
+export const signUpCodeSchema = z.object({
+  email: emailSchema,
+  code: z.string().trim().regex(/^[0-9]{6,10}$/, { message: 'invalid_code' }),
+});
+
 export const passwordResetSchema = z.object({
   email: emailSchema,
 });

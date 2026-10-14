@@ -3,15 +3,16 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { Car, MailCheck, Wrench } from 'lucide-react';
+import { Car, Wrench } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useBackend } from '@/lib/backend';
 import { errorMessage, fieldMessages } from '@/lib/errors';
 import { safeNext } from '@/lib/redirects';
 import { Field, Input, PasswordInput } from '@/components/ui/field';
-import { Button, ButtonLink } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { GoogleButton, OrWithEmail } from '@/components/auth/google-button';
+import { ConfirmCode } from '@/components/auth/confirm-code';
 
 export default function SignUpPage() {
   return (
@@ -28,16 +29,23 @@ function SignUp() {
   const backend = useBackend();
   const next = safeNext(params.get('next'));
   const [intent, setIntent] = useState<'driver' | 'technician'>(params.get('intent') === 'technician' ? 'technician' : 'driver');
-  const [form, setForm] = useState({ fullName: '', phone: '', email: '', password: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '', email: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [confirmSent, setConfirmSent] = useState(false);
+  // Set when Supabase asks to confirm the address: the code step follows.
+  const [confirmFor, setConfirmFor] = useState<string | null>(null);
+  const destination = intent === 'technician' ? '/pro/onboarding' : (next ?? '/');
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = async () => {
     if (!backend) return;
+    if (form.password !== form.confirmPassword) {
+      setErrors({ confirmPassword: t('errors.password_mismatch') });
+      setError(null);
+      return;
+    }
     setBusy(true);
     setError(null);
     setErrors({});
@@ -51,14 +59,15 @@ function SignUp() {
           intent,
           locale,
         },
-        // After confirming their email, technicians go straight on to their listing.
-        { redirectPath: intent === 'technician' ? '/pro/onboarding' : (next ?? undefined) },
+        // If the email's link is used instead of the code, it leads to the same place.
+        { redirectPath: destination },
       );
       if (res.needsEmailConfirmation) {
-        setConfirmSent(true);
+        setConfirmFor(form.email.trim());
         return;
       }
-      router.replace(intent === 'technician' ? '/pro/onboarding' : (next ?? '/'));
+      // Signed in already: no separate sign-in step.
+      router.replace(destination);
     } catch (e) {
       setErrors(fieldMessages(t, e));
       setError(errorMessage(t, e));
@@ -67,20 +76,7 @@ function SignUp() {
     }
   };
 
-  if (confirmSent) {
-    return (
-      <div className="pt-6 text-center">
-        <span className="mx-auto grid size-14 place-items-center rounded-full border border-line bg-surface-1 text-gold">
-          <MailCheck className="size-6" aria-hidden="true" />
-        </span>
-        <h1 className="mt-5 font-display text-[26px] text-ink">{t('auth.signUpTitle')}</h1>
-        <p className="mt-3 text-[16px] leading-relaxed text-ink-2">{t('auth.checkEmail')}</p>
-        <ButtonLink href="/auth/sign-in" size="lg" className="mt-6">
-          {t('auth.signIn')}
-        </ButtonLink>
-      </div>
-    );
-  }
+  if (confirmFor) return <ConfirmCode email={confirmFor} onConfirmed={() => router.replace(destination)} />;
 
   return (
     <>
@@ -135,6 +131,9 @@ function SignUp() {
         </Field>
         <Field label={t('auth.password')} hint={t('auth.passwordHelp')} error={errors.password}>
           {(p) => <PasswordInput {...p} autoComplete="new-password" required minLength={8} value={form.password} onChange={set('password')} />}
+        </Field>
+        <Field label={t('auth.confirmPassword')} error={errors.confirmPassword}>
+          {(p) => <PasswordInput {...p} autoComplete="new-password" required minLength={8} value={form.confirmPassword} onChange={set('confirmPassword')} />}
         </Field>
         {error && (
           <p role="alert" className="rounded-md border border-danger/30 bg-danger/8 px-3.5 py-2.5 text-[14px] text-danger-soft">

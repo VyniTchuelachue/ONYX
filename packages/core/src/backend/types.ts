@@ -77,6 +77,12 @@ export interface AuthPort {
   signInWithProvider(provider: 'google', options?: { redirectPath?: string }): Promise<void>;
   /** `redirectPath`: where the confirmation link should land, e.g. `/pro/onboarding`. */
   signUp(input: SignUpInput, options?: { redirectPath?: string }): Promise<{ session: Session | null; needsEmailConfirmation: boolean }>;
+  /**
+   * When email confirmation is on, sign-up ends with a code sent by email: this checks it and
+   * signs the person in. (The email's link works too: it signs them in on /auth/callback.)
+   */
+  verifySignUpCode(email: string, code: string): Promise<Session>;
+  resendSignUpCode(email: string): Promise<void>;
   /** Emails a link to choose a new password. Resolves the same way whether or not the address has an account. */
   requestPasswordReset(email: string): Promise<void>;
   /** Sets a new password for the signed-in user (after following the reset link). */

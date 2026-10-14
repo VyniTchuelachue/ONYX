@@ -334,6 +334,12 @@ export async function createDemoBackend(opts: DemoBackendOptions): Promise<OnyxB
         });
         return { session: sessionFor(profile), needsEmailConfirmation: false };
       },
+      async verifySignUpCode() {
+        throw new BackendError('forbidden', 'The demo never asks for a code');
+      },
+      async resendSignUpCode() {
+        throw new BackendError('forbidden', 'The demo never sends emails');
+      },
       // Demo accounts have no real passwords and no mailbox: validate, then succeed.
       async requestPasswordReset(email) {
         validate(passwordResetSchema, { email });

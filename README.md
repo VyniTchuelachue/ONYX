@@ -48,8 +48,11 @@ copy `apps/web/.env.example` to `apps/web/.env.local` and fill it in.
      links to `NEXT_PUBLIC_SITE_URL`, or on Vercel to the production domain automatically.
    - Authentication → SMTP: connect your own sender (Resend, Brevo…). Supabase's built-in
      sender is for testing only: a few emails per hour, and only to your team's addresses.
-   - Optional: Authentication → Sign In / Providers → Email → turn off "Confirm email" so
-     people start right after signing up (the address is then not checked).
+   - Sign-up confirmation by 6-digit code: keep "Confirm email" on (Authentication → Sign
+     In / Providers → Email), then in Authentication → Emails → Confirm signup paste the
+     subject and body from `supabase/templates/confirm-signup.html`. After signing up, the
+     app asks for the code and signs the person in. Turning "Confirm email" off instead
+     signs people in straight away, without checking the address.
 5. Continue with Google:
    - Google Cloud Console → APIs & Services → OAuth consent screen: app name ONYX, support
      email, then publish the app.

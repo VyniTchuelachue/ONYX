@@ -74,7 +74,7 @@ describe('supabase adapter: accounts', () => {
     );
     assert.equal(result.needsEmailConfirmation, true);
     const options = (calls.signUp?.[0] as { options: { emailRedirectTo: string } }).options;
-    assert.equal(options.emailRedirectTo, 'https://onyx.test/auth/sign-in?next=%2Fpro%2Fonboarding');
+    assert.equal(options.emailRedirectTo, 'https://onyx.test/auth/callback?next=%2Fpro%2Fonboarding');
   });
 
   it('tells unconfirmed accounts to open their confirmation email', async () => {
@@ -144,8 +144,41 @@ describe('supabase adapter: accounts', () => {
     await createSupabaseBackend(client, { siteUrl: 'https://onyx.test' }).auth.signInWithProvider('google', { redirectPath: '/pro/onboarding' });
     assert.deepEqual(sent, {
       provider: 'google',
-      options: { redirectTo: 'https://onyx.test/auth/sign-in?next=%2Fpro%2Fonboarding', queryParams: { prompt: 'select_account' } },
+      options: { redirectTo: 'https://onyx.test/auth/callback?next=%2Fpro%2Fonboarding', queryParams: { prompt: 'select_account' } },
     });
+  });
+
+  it('checks the emailed sign-up code, then signs the person in', async () => {
+    let checked: unknown;
+    const profile = { id: 'user-9', role: 'driver', full_name: 'Awa Ngo', email: 'awa@example.com', phone: null, locale: 'fr', default_vehicle: null, created_at: '2026-10-15T08:00:00.000Z' };
+    const client = {
+      auth: {
+        verifyOtp: async (args: unknown) => {
+          checked = args;
+          return { data: { user: { id: 'user-9', email: 'awa@example.com' }, session: {} }, error: null };
+        },
+      },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: profile, error: null }) }) }) }),
+    } as unknown as SupabaseClient;
+    const session = await createSupabaseBackend(client).auth.verifySignUpCode('awa@example.com', ' 123456 ');
+    assert.deepEqual(checked, { email: 'awa@example.com', token: '123456', type: 'email' });
+    assert.equal(session.profile.fullName, 'Awa Ngo');
+  });
+
+  it('turns a wrong or expired code into a message on the code field', async () => {
+    const calls: string[] = [];
+    const client = {
+      auth: {
+        verifyOtp: async () => {
+          calls.push('verify');
+          return { data: { user: null, session: null }, error: { code: 'otp_expired', status: 403, message: 'Token has expired or is invalid' } };
+        },
+      },
+    } as unknown as SupabaseClient;
+    const backend = createSupabaseBackend(client);
+    await rejectsWith(backend.auth.verifySignUpCode('awa@example.com', '12ab'), 'validation', ['code', 'invalid_code']);
+    assert.deepEqual(calls, [], 'a code that is not digits never reaches Supabase');
+    await rejectsWith(backend.auth.verifySignUpCode('awa@example.com', '654321'), 'validation', ['code', 'invalid_code']);
   });
 
   it('still recognises wrong passwords from older Auth servers', async () => {

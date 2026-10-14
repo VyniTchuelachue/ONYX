@@ -1,0 +1,24 @@
+<!--
+  ONYX — "Confirm signup" email: a 6-digit code instead of a link. The app asks for it right
+  after sign-up and signs the person in. Written in the language chosen in the app.
+
+  Supabase dashboard → Authentication → Emails (Email Templates) → Confirm signup:
+    Subject:  {{ if eq .Data.locale "en" }}Your ONYX code: {{ .Token }}{{ else }}Votre code ONYX : {{ .Token }}{{ end }}
+    Body:     everything below this comment.
+  The code lasts as long as "Email OTP Expiration" (default one hour, as said below).
+-->
+{{ if eq .Data.locale "en" }}
+<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #111111;">
+  <p style="margin: 0 0 24px; font-size: 20px; font-weight: bold; letter-spacing: 3px;">ONYX</p>
+  <p style="margin: 0; font-size: 16px; line-height: 1.5;">Here is your code to finish creating your ONYX account:</p>
+  <p style="margin: 24px 0; font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #000000;">{{ .Token }}</p>
+  <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #555555;">Type it in the app. It works for one hour. If you didn't try to create an ONYX account, you can ignore this email.</p>
+</div>
+{{ else }}
+<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #111111;">
+  <p style="margin: 0 0 24px; font-size: 20px; font-weight: bold; letter-spacing: 3px;">ONYX</p>
+  <p style="margin: 0; font-size: 16px; line-height: 1.5;">Voici votre code pour terminer la création de votre compte ONYX&nbsp;:</p>
+  <p style="margin: 24px 0; font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #000000;">{{ .Token }}</p>
+  <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #555555;">Saisissez-le dans l’application. Il est valable une heure. Si vous n’avez pas demandé à créer un compte ONYX, ignorez cet e-mail.</p>
+</div>
+{{ end }}
