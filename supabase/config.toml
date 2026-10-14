@@ -1,0 +1,31 @@
+# Supabase CLI configuration (https://supabase.com/docs/guides/local-development).
+# Only the settings ONYX relies on are listed; everything else uses CLI defaults.
+project_id = "onyx"
+
+[api]
+schemas = ["public", "graphql_public"]
+max_rows = 1000
+
+[db]
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[storage]
+file_size_limit = "5MiB"
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+# Turn confirmations on in production (Dashboard → Authentication → Providers → Email).
+enable_confirmations = false

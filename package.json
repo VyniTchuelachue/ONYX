@@ -1,0 +1,31 @@
+{
+  "name": "onyx",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ONYX — roadside assistance connecting drivers with verified mechanics in Douala and along Cameroon's intercity roads.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @onyx/web",
+    "build": "npm run build -w @onyx/web",
+    "start": "npm run start -w @onyx/web",
+    "lint": "npm run lint -w @onyx/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @onyx/core",
+    "db:seed": "tsx scripts/generate-seed.ts",
+    "db:test": "tsx scripts/db-test.ts",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.9",
+    "@types/node": "24.19.2",
+    "sharp": "0.35.5",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}

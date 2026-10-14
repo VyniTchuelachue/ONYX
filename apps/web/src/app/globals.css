@@ -1,0 +1,406 @@
+@import 'tailwindcss';
+
+/*
+ * ONYX design tokens.
+ * Black is the brand's ground (true #000, kind to OLED screens at night); muted gold
+ * carries actions and the road motif; the gem's blue and violet are reserved for the
+ * assistant and live states. Text is a warm white so gold never looks muddy beside it.
+ */
+@theme {
+  --color-onyx: #000000;
+  --color-surface-1: #0d0d0e;
+  --color-surface-2: #161618;
+  --color-surface-3: #222225;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.16);
+
+  --color-ink: #f4f1ea;
+  --color-ink-2: #b4aea1;
+  --color-ink-3: #827c72;
+
+  --color-gold: #c6a668;
+  --color-gold-bright: #ecca7c;
+  --color-gold-deep: #8d713f;
+  --color-blue: #2a82ff;
+  --color-blue-soft: #74b0ff;
+  --color-violet: #9b30ff;
+  --color-violet-soft: #c08cff;
+  --color-ok: #43d392;
+  --color-danger: #ff5a4e;
+  --color-danger-soft: #ff958c;
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 30px;
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --animate-pulse-ring: pulse-ring 2.4s var(--ease-out-quint) infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-gem-spin: gem-spin 6s linear infinite;
+
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes gem-spin {
+    to {
+      --gem-angle: 360deg;
+    }
+  }
+}
+
+@property --gem-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 200deg;
+}
+
+:root {
+  --gem-stops: #f3cc72, #c99328 12%, #9a0dfd 32%, #3b0096 44%, #0049d1 58%, #0aa7fc 72%, #0070fe 84%, #f3cc72;
+  --gem-linear: linear-gradient(115deg, #f3cc72 0%, #b07ae8 38%, #3e7bff 72%, #0aa7fc 100%);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background: var(--color-onyx);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-onyx);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-bright);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: rgb(198 166 104 / 0.35);
+    color: var(--color-ink);
+  }
+
+  button,
+  [role='button'] {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Archivo's width axis carries the display voice: wide like the ONYX wordmark. */
+@utility font-display {
+  font-stretch: 125%;
+  letter-spacing: -0.012em;
+  font-weight: 650;
+}
+
+@utility font-wide {
+  font-stretch: 112%;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility pt-safe {
+  padding-top: var(--safe-top);
+}
+
+@utility pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* A hairline border painted with the gem's colours. */
+@utility gem-ring {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1.5px;
+    border-radius: inherit;
+    background: conic-gradient(from var(--gem-angle), var(--gem-stops));
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+@utility gem-fill {
+  background: conic-gradient(from var(--gem-angle), var(--gem-stops));
+}
+
+@utility gem-text {
+  background: var(--gem-linear);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* The road's centre line: the structural motif for progress. */
+@utility road-dashes {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--color-gold) 0 9px,
+    transparent 9px 18px
+  );
+}
+
+@utility road-dashes-x {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--color-gold) 0 9px,
+    transparent 9px 18px
+  );
+}
+
+@utility skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 0%,
+    var(--color-surface-3) 50%,
+    var(--color-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* ── Native <dialog> sheets ─────────────────────────────────────────────── */
+dialog.onyx-sheet {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  max-width: 100vw;
+  max-height: 100dvh;
+  width: 100%;
+  inset: auto 0 0 0;
+  overflow: visible;
+}
+
+dialog.onyx-sheet::backdrop {
+  background: rgb(0 0 0 / 0.66);
+  backdrop-filter: blur(3px);
+}
+
+dialog.onyx-sheet[open] > .sheet-panel {
+  animation: sheet-in 320ms var(--ease-out-quint);
+}
+
+dialog.onyx-sheet[open]::backdrop {
+  animation: fade-in 220ms ease-out;
+}
+
+@media (min-width: 640px) {
+  dialog.onyx-sheet {
+    inset: 0;
+    margin: auto;
+    width: min(520px, calc(100vw - 32px));
+    height: fit-content;
+  }
+  dialog.onyx-sheet[open] > .sheet-panel {
+    animation: dialog-in 260ms var(--ease-out-quint);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    transform: translateY(12px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Leaflet, dressed for the dark ──────────────────────────────────────── */
+.leaflet-container {
+  background: #0b0b0c !important;
+  font-family: var(--font-sans) !important;
+}
+
+/* Light OpenStreetMap tiles, turned into a night map that matches the interface. */
+.onyx-map--darken .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.55);
+}
+
+.leaflet-control-attribution {
+  background: rgb(0 0 0 / 0.6) !important;
+  color: var(--color-ink-3) !important;
+  font-size: 10px !important;
+  border-radius: 6px 0 0 0;
+}
+
+.leaflet-control-attribution a {
+  color: var(--color-ink-2) !important;
+}
+
+.leaflet-bar a {
+  background: var(--color-surface-2) !important;
+  color: var(--color-ink) !important;
+  border-color: var(--color-line) !important;
+}
+
+.leaflet-div-icon {
+  background: transparent;
+  border: 0;
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* Map pins */
+.onyx-pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.onyx-pin i {
+  display: block;
+  border-radius: 9999px;
+}
+
+.onyx-pin--tech i {
+  width: 14px;
+  height: 14px;
+  background: var(--color-ink-3);
+  box-shadow:
+    0 0 0 3px #000,
+    0 0 0 4px rgb(255 255 255 / 0.25);
+  transition: transform 160ms var(--ease-out-quint);
+}
+
+.onyx-pin--tech.is-available i {
+  background: var(--color-gold);
+}
+
+.onyx-pin--tech.is-selected i {
+  width: 20px;
+  height: 20px;
+  background: var(--color-gold-bright);
+  box-shadow:
+    0 0 0 3px #000,
+    0 0 0 5px var(--color-gold-bright);
+}
+
+.onyx-pin--driver i,
+.onyx-pin--live i {
+  width: 14px;
+  height: 14px;
+  box-shadow: 0 0 0 3px #000;
+}
+
+.onyx-pin--driver i {
+  background: var(--color-blue);
+}
+
+.onyx-pin--live i {
+  background: var(--color-gold-bright);
+}
+
+.onyx-pin--driver::before,
+.onyx-pin--live::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  animation: var(--animate-pulse-ring);
+}
+
+.onyx-pin--driver::before {
+  background: rgb(42 130 255 / 0.45);
+}
+
+.onyx-pin--live::before {
+  background: rgb(236 202 124 / 0.45);
+}
