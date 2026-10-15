@@ -199,7 +199,9 @@ create trigger request_events_push
 do $$
 begin
   if exists (select 1 from pg_available_extensions where name = 'pg_net') then
-    create extension if not exists pg_net;
+    -- Kept out of the public schema, as Supabase recommends; its functions live in net either way.
+    create schema if not exists extensions;
+    create extension if not exists pg_net with schema extensions;
   end if;
 end;
 $$;

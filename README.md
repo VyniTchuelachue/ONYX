@@ -43,9 +43,10 @@ copy `apps/web/.env.example` to `apps/web/.env.local` and fill it in.
 4. Sign-up confirmations and password resets are emailed by Supabase Auth:
    - Authentication → URL Configuration: set the Site URL to your production address (on
      Vercel, the one under Settings → Domains, e.g. `https://onyx-xxxx.vercel.app`) and add
-     `https://your-domain/**` to the Redirect URLs. Never use a deployment-specific
-     `*.vercel.app` address: Vercel asks visitors to log in to Vercel there. The app sends
-     links to `NEXT_PUBLIC_SITE_URL`, or on Vercel to the production domain automatically.
+     `https://your-domain/**` to the Redirect URLs. Use only that address: the project's
+     other `*.vercel.app` addresses (with your team name or a commit in them) ask visitors to
+     log in to Vercel. The app sends links to `NEXT_PUBLIC_SITE_URL`, or on Vercel to the
+     production domain automatically.
    - Authentication → SMTP: connect your own sender (Resend, Brevo…). Supabase's built-in
      sender is for testing only: a few emails per hour, and only to your team's addresses.
    - Sign-up confirmation by 6-digit code: keep "Confirm email" on (Authentication → Sign
@@ -67,7 +68,7 @@ copy `apps/web/.env.example` to `apps/web/.env.local` and fill it in.
 
 ```bash
 npm test           # core unit tests (56): rules, triage, i18n parity, alerts, accounts, demo job flow
-npm run db:test    # 88 checks: migrations + RLS + job lifecycle + alerts + account deletion in embedded Postgres
+npm run db:test    # 89 checks: migrations + RLS + job lifecycle + alerts + account deletion in embedded Postgres
 npm run typecheck
 ```
 
