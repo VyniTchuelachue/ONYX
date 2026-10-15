@@ -1,10 +1,11 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useSyncExternalStore } from 'react';
+import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { CircleAlert } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
+import { useBackend } from '@/lib/backend';
 import { homeFor, safeNext } from '@/lib/redirects';
 import { ButtonLink } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -22,32 +23,57 @@ export default function AuthCallbackPage() {
   );
 }
 
+/**
+ * Why Google or Supabase sent the person back without a session (error_description in the
+ * address). Read once, as the page loads, before supabase-js tidies the address.
+ */
+const RETURN_ERROR: string | null = (() => {
+  if (typeof window === 'undefined') return null;
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const query = new URLSearchParams(window.location.search);
+  const detail = hash.get('error_description') ?? query.get('error_description') ?? hash.get('error') ?? query.get('error');
+  if (detail) console.error('[auth] sign-in returned an error:', detail);
+  return detail;
+})();
 const noSubscription = () => () => {};
-// Google or Supabase send people back with error=… when the sign-in did not happen.
-const returnedWithError = () => /(^|[#&?])error=/.test(window.location.hash + window.location.search);
 
 function Callback() {
   const { t } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
+  const backend = useBackend();
   const next = safeNext(params.get('next'));
   const { status, session } = useSession();
-  const failedAtProvider = useSyncExternalStore(noSubscription, returnedWithError, () => false);
+  const returnError = useSyncExternalStore(noSubscription, () => RETURN_ERROR, () => null);
   const role = session?.profile.role ?? null;
+  // Signed in with Supabase but no ONYX profile came back: the database isn't set up.
+  const [profileMissing, setProfileMissing] = useState(false);
 
   useEffect(() => {
     if (role) router.replace(next ?? homeFor(role));
   }, [role, next, router]);
 
-  if (failedAtProvider || status === 'signed-out') {
+  useEffect(() => {
+    if (status !== 'signed-out' || !backend) return;
+    let alive = true;
+    void backend.auth.getAccessToken().then((token) => {
+      if (alive && token) setProfileMissing(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [status, backend]);
+
+  if (returnError || status === 'signed-out') {
     return (
       <div className="pt-6 text-center">
         <span className="mx-auto grid size-14 place-items-center rounded-full border border-line bg-surface-1 text-danger-soft">
           <CircleAlert className="size-6" aria-hidden="true" />
         </span>
         <p role="alert" className="mx-auto mt-5 max-w-sm text-[16px] leading-relaxed text-ink-2">
-          {t('auth.callbackFailed')}
+          {profileMissing && !returnError ? t('auth.profileMissing') : t('auth.callbackFailed')}
         </p>
+        {returnError && <p className="mx-auto mt-3 max-w-sm break-words text-[13px] text-ink-3">{t('auth.errorDetail', { detail: returnError })}</p>}
         <ButtonLink href={`/auth/sign-in${next ? `?next=${encodeURIComponent(next)}` : ''}`} size="lg" className="mt-6">
           {t('auth.backToSignIn')}
         </ButtonLink>

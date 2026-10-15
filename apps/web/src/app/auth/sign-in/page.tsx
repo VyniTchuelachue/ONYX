@@ -56,6 +56,7 @@ function SignIn() {
       go(session.profile.role);
     } catch (e) {
       if (isBackendError(e) && e.code === 'email_not_confirmed') setConfirmFor(email.trim());
+      else if (isBackendError(e) && e.code === 'not_found') setError(t('auth.profileMissing'));
       else setError(errorMessage(t, e));
       setBusy(false);
     }

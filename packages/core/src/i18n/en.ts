@@ -519,6 +519,8 @@ export const en: Dictionary = {
     codeResent: 'New code sent',
     signingYouIn: 'Signing you in…',
     callbackFailed: "Signing in didn't go through: the link may have expired or already been used.",
+    errorDetail: 'Details: {detail}',
+    profileMissing: "You're signed in, but your ONYX profile can't be found: the database tables may not be set up yet.",
     continueWithGoogle: 'Continue with Google',
     orWithEmail: 'or with your email',
     forgotTitle: 'Reset your password',

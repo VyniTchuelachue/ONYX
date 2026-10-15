@@ -522,6 +522,8 @@ export const fr = {
     codeResent: 'Nouveau code envoyé',
     signingYouIn: 'Connexion…',
     callbackFailed: 'La connexion n’a pas abouti : le lien a peut-être expiré ou a déjà servi.',
+    errorDetail: 'Détail : {detail}',
+    profileMissing: 'Vous êtes connecté, mais votre profil ONYX est introuvable : les tables de la base de données ne sont peut-être pas installées.',
     continueWithGoogle: 'Continuer avec Google',
     orWithEmail: 'ou avec votre e-mail',
     forgotTitle: 'Mot de passe oublié',
