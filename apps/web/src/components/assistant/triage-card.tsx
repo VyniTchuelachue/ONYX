@@ -3,20 +3,27 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { m } from 'motion/react';
-import { CircleAlert, Phone, Search, Volume2, VolumeX, Wrench } from 'lucide-react';
+import { Bot, CircleAlert, Phone, Search, Volume2, VolumeX, Wrench } from 'lucide-react';
 import type { AssistantSource, AssistantTurn, UrgencyLevel } from '@onyx/core';
 import { useI18n } from '@/lib/i18n';
 import { writeDraft } from '@/lib/request-draft';
 import { cn } from '@/lib/utils';
 import { Pill, type Tone } from '../ui/bits';
-import { Emblem } from '../brand';
 import { buttonClass } from '../ui/button';
 import { useShellActions } from '../shell/shell-actions';
 
 const URGENCY_TONE: Record<UrgencyLevel, Tone> = { low: 'neutral', medium: 'gold', high: 'danger', critical: 'danger' };
 
+/** A plain bot beside each answer, so it reads as automatic advice; the gem ring matches the ask box. */
 export function AssistantAvatar({ className }: { className?: string }) {
-  return <Emblem size={30} className={className} />;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('gem-ring grid size-[30px] shrink-0 place-items-center rounded-full bg-surface-2 text-gold-bright', className)}
+    >
+      <Bot className="size-[17px]" strokeWidth={1.75} />
+    </span>
+  );
 }
 
 /** One assistant answer: what to do first, what to check, and who can fix it. */
