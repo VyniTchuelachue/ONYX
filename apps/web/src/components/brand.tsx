@@ -11,6 +11,8 @@ export function Emblem({ size = 32, className, priority }: { size?: number; clas
       height={size}
       priority={priority}
       className={cn('shrink-0 rounded-full', className)}
+      // Fixed in CSS too: beside a block of text, a flex row would stretch it to the text's height.
+      style={{ width: size, height: size }}
     />
   );
 }
